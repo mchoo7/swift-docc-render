@@ -276,7 +276,6 @@ export default defineConfig(({ command, mode }) => {
         '@': sourceRoot,
         'docc-render': sourceRoot,
         'theme': sourceRoot,
-        'highlight-js-alias': path.join(projectRoot, 'node_modules/highlight.js'),
       },
     },
     define: {
