@@ -311,6 +311,12 @@ describe("syntax-highlight", () => {
   });
 
   describe("language aliases", () => {
+    it("only defines aliases for supported languages", () => {
+      expect(LanguageAliasEntries.filter(
+        ([language]) => !SupportedLanguagesSet.has(language)
+      )).toEqual([]);
+    });
+
     it("registers a primary language, by its alias", async () => {
       const [firstAlias] = LanguageAliasEntries;
       const [language, aliases] = firstAlias;

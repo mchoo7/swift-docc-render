@@ -283,9 +283,6 @@ export default defineConfig(({ command, mode }) => {
       'process.env.VUE_APP_DEFAULT_LOCALE': JSON.stringify(
         env.VITE_APP_DEFAULT_LOCALE || '',
       ),
-      'process.env.VUE_APP_HLJS_LANGUAGES': JSON.stringify(
-        env.VITE_APP_HLJS_LANGUAGES || '',
-      ),
       'process.env.VUE_APP_PERFORMANCE_ENABLED': JSON.stringify(
         env.VITE_APP_PERFORMANCE_ENABLED || '',
       ),

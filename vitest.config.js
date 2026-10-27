@@ -32,12 +32,6 @@ export default defineConfig(configEnv => mergeConfig(
           replacement: fileURLToPath(new URL('./tests/unit/file-mock.js', import.meta.url)),
         },
         {
-          find: 'virtual:swift-docc-highlight-languages',
-          replacement: fileURLToPath(
-            new URL('./tests/unit/highlight-language-loaders.js', import.meta.url),
-          ),
-        },
-        {
           find: 'vue-virtual-scroller',
           replacement: fileURLToPath(
             new URL('./tests/unit/vue-virtual-scroller.js', import.meta.url),
