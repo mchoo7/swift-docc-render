@@ -8,19 +8,14 @@
  * See https://swift.org/CONTRIBUTORS.txt for Swift project authors
 */
 
-import {
-  shallowMount,
-  RouterLinkStub,
-} from '@vue/test-utils';
+import { shallowMount } from '@vue/test-utils';
 import SuggestLang from 'docc-render/components/SuggestLang.vue';
 import AppStore from 'docc-render/stores/AppStore';
 import { getLocaleParam, getCodeForSlug } from 'docc-render/utils/i18n-utils';
 
 vi.mock('docc-render/utils/i18n-utils', () => ({
   getCodeForSlug: vi.fn(value => value),
-  getLocaleParam: vi.fn(() => ({
-    locale: undefined,
-  })),
+  getLocaleParam: vi.fn(slug => ({ params: { locale: slug } })),
 }));
 
 vi.mock('docc-render/stores/AppStore', () => ({
@@ -31,12 +26,6 @@ vi.mock('docc-render/stores/AppStore', () => ({
     },
   },
 }));
-
-vi.spyOn(window.navigator, 'language', 'get').mockReturnValue('en-GB');
-
-const params = {
-  locale: undefined,
-};
 
 const {
   InlineChevronRightIcon,
@@ -51,47 +40,81 @@ const messages = {
 
 const currentLocale = 'zh-CN';
 
+const href = '/en-US/documentation/bar';
+
+const $route = { path: '/documentation/bar', params: {}, query: { language: 'objc' } };
+
+const resolve = vi.fn(() => ({ href }));
+
+const createWrapper = (mocks = {}) => shallowMount(SuggestLang, {
+  mocks: {
+    $t: (key, _values, { locale } = {}) => messages[locale]?.[key] ?? key,
+    $i18n: {
+      locale: currentLocale,
+    },
+    $router: {
+      push: vi.fn(),
+      resolve,
+    },
+    $route,
+    ...mocks,
+  },
+});
+
 describe('SuggestLang', () => {
   let wrapper;
   let link;
   let closeIcon;
 
   beforeEach(() => {
-    wrapper = shallowMount(SuggestLang, {
-      stubs: { 'router-link': RouterLinkStub },
-      mocks: {
-        $t: (key, _values, { locale } = {}) => messages[locale]?.[key] ?? key,
-        $i18n: {
-          locale: currentLocale,
-        },
-      },
-    });
+    vi.clearAllMocks();
+    vi.spyOn(window.navigator, 'language', 'get').mockReturnValue('en-GB');
+    wrapper = createWrapper();
 
-    link = wrapper.findComponent('.suggest-lang__link');
-    closeIcon = wrapper.findComponent('.suggest-lang__close-icon-button');
+    link = wrapper.find('.suggest-lang__link');
+    closeIcon = wrapper.find('.suggest-lang__close-icon-button');
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('renders a <SuggestLang> if preferredLocale is different to currentLocale', () => {
     expect(wrapper.element.matches('.suggest-lang')).toBe(true);
   });
 
-  it('renders a router link with the preferredLocale view-in text and lang tag using the matching locale', () => {
+  it('does not render if preferredLocale is the currentLocale', () => {
+    wrapper = createWrapper({
+      $i18n: {
+        locale: matchingLocale,
+      },
+    });
+
+    expect(wrapper.find('.suggest-lang').exists()).toBe(false);
+  });
+
+  it('renders a link with the preferredLocale view-in text and lang tag using the matching locale', () => {
     expect(link.text()).toBe(messages[matchingLocale]['view-in']);
     expect(getCodeForSlug).toHaveBeenCalledWith(matchingLocale);
     expect(link.attributes('lang')).toBe(matchingLocale);
   });
 
-  it('sets the preferred locale when router link is clicked', () => {
+  it('sets the preferred locale when the link is clicked', () => {
+    link.element.addEventListener('click', event => event.preventDefault());
     link.trigger('click');
 
     expect(AppStore.setPreferredLocale).toHaveBeenCalledWith(matchingLocale);
   });
 
-  it('takes you to the preferredLocale url when clicking in router link', async () => {
-    await link.trigger('click');
-
+  it('links to the preferredLocale url with a page load', () => {
     expect(getLocaleParam).toHaveBeenCalledWith(matchingLocale);
-    expect(link.props('to')).toEqual(params);
+    expect(resolve).toHaveBeenCalledWith({
+      params: { locale: matchingLocale },
+      query: $route.query,
+    });
+    expect(link.element.matches('a')).toBe(true);
+    expect(link.attributes('href')).toBe(href);
+    expect(wrapper.vm.$router.push).not.toHaveBeenCalled();
   });
 
   it('renders a InlineChevronRightIcon', () => {
