@@ -218,6 +218,7 @@ function distributionLicenseHeaders() {
     apply: 'build',
     enforce: 'post',
     generateBundle(_options, bundle) {
+      // Add headers while the generated chunks and assets are still in the bundler pipeline.
       Object.values(bundle).forEach((output) => {
         if (output.type === 'chunk') {
           // eslint-disable-next-line no-param-reassign
@@ -229,6 +230,7 @@ function distributionLicenseHeaders() {
       });
     },
     closeBundle() {
+      // Reapply the header to the final files in case later output processing rewrote them.
       ['css', 'js'].forEach((directory) => {
         const outputDirectory = path.join(projectRoot, 'dist', directory);
         if (!fs.existsSync(outputDirectory)) return;
