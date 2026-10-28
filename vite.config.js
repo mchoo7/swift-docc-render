@@ -32,10 +32,6 @@ const DISTRIBUTION_LICENSE_HEADER = [
 ].join('\n');
 
 const proxyPathPattern = /^\/(data|downloads|images|videos|index|theme-settings\.json)(?:\/|$)/;
-const themeRoots = [
-  path.join(projectRoot, 'src/theme'),
-  sourceRoot,
-];
 const builtinHighlightLanguages = [
   'bash',
   'c',
@@ -74,17 +70,38 @@ function resolveFile(candidate) {
   ].find(file => fs.existsSync(file));
 }
 
-function themeFallback() {
+export function themeFallback({ themeRoots } = {}) {
+  let roots;
+  const resolveThemeFile = (id) => {
+    if (!id.startsWith('theme/')) return null;
+    const relativePath = id.slice('theme/'.length);
+    return roots
+      .map(root => resolveFile(path.join(root, relativePath)))
+      .find(Boolean) || null;
+  };
+
   return {
     name: 'swift-docc-render-theme-fallback',
     enforce: 'pre',
-    resolveId(id) {
-      if (!id.startsWith('theme/')) return null;
-      const relativePath = id.slice('theme/'.length);
-      return themeRoots
-        .map(root => resolveFile(path.join(root, relativePath)))
-        .find(Boolean) || null;
+    config: () => ({
+      css: {
+        preprocessorOptions: {
+          scss: {
+            importers: [{
+              findFileUrl(url) {
+                const file = resolveThemeFile(url);
+                return file ? pathToFileURL(file) : null;
+              },
+            }],
+          },
+        },
+      },
+    }),
+    configResolved(config) {
+      // order the theme fallback from custom theme to swift-docc-render/src
+      roots = [...(themeRoots ?? [path.join(config.root, 'src/theme')]), sourceRoot];
     },
+    resolveId: resolveThemeFile,
   };
 }
 
@@ -307,16 +324,6 @@ export default defineConfig(({ command, mode }) => {
       preprocessorOptions: {
         scss: {
           additionalData: `$build-target: '${buildTarget}'; $is-target-ide: $build-target == 'ide';`,
-          importers: [{
-            findFileUrl(url) {
-              if (!url.startsWith('theme/')) return null;
-              const relativePath = url.slice('theme/'.length);
-              const file = themeRoots
-                .map(root => resolveFile(path.join(root, relativePath)))
-                .find(Boolean);
-              return file ? pathToFileURL(file) : null;
-            },
-          }],
           silenceDeprecations: [
             'color-functions',
             'global-builtin',
