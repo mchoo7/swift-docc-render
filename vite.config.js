@@ -306,7 +306,6 @@ export default defineConfig(({ command, mode }) => {
       alias: {
         '@': sourceRoot,
         'docc-render': sourceRoot,
-        'theme': sourceRoot,
       },
     },
     define: {
