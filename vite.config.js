@@ -207,6 +207,7 @@ function highlightLanguageLoaders(additionalLanguages) {
 }
 
 function distributionLicenseHeaders() {
+  let outputRoot;
   const normalizeHeader = contents => (
     `${DISTRIBUTION_LICENSE_HEADER}\n${
       contents.replace(`${DISTRIBUTION_LICENSE_HEADER}\n`, '')
@@ -217,6 +218,9 @@ function distributionLicenseHeaders() {
     name: 'swift-docc-render-license-headers',
     apply: 'build',
     enforce: 'post',
+    configResolved(config) {
+      outputRoot = path.resolve(config.root, config.build.outDir);
+    },
     generateBundle(_options, bundle) {
       // Add headers while the generated chunks and assets are still in the bundler pipeline.
       Object.values(bundle).forEach((output) => {
@@ -232,7 +236,7 @@ function distributionLicenseHeaders() {
     closeBundle() {
       // Reapply the header to the final files in case later output processing rewrote them.
       ['css', 'js'].forEach((directory) => {
-        const outputDirectory = path.join(projectRoot, 'dist', directory);
+        const outputDirectory = path.join(outputRoot, directory);
         if (!fs.existsSync(outputDirectory)) return;
         fs.readdirSync(outputDirectory).forEach((fileName) => {
           const outputFile = path.join(outputDirectory, fileName);
