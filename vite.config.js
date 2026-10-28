@@ -256,6 +256,14 @@ export default defineConfig(({ command, mode }) => {
 
   return {
     base: isBuild ? `/${BASE_URL_PLACEHOLDER}/` : '/',
+    experimental: {
+      renderBuiltUrl(filename, { hostType }) {
+        if (hostType === 'js') {
+          return { runtime: `new URL(${JSON.stringify(filename)}, document.baseURI).href` };
+        }
+        return undefined;
+      },
+    },
     plugins: [
       themeFallback(),
       highlightLanguageLoaders(env.VITE_APP_HLJS_LANGUAGES || ''),
