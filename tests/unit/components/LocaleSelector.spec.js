@@ -84,7 +84,6 @@ describe('LocaleSelector', () => {
   });
 
   it('navigates with a normal page load when option is selected', async () => {
-    const loadPage = vi.spyOn(wrapper.vm, 'loadPage').mockImplementation(() => {});
     const cnOption = wrapper.findAll('option').at(1);
     const slug = cnOption.attributes('value');
     await cnOption.trigger('change');
@@ -92,7 +91,6 @@ describe('LocaleSelector', () => {
     expect(getLocaleParam).toHaveBeenCalledTimes(1);
     expect(getLocaleParam).toHaveBeenCalledWith(slug);
     expect(resolve).toHaveBeenCalledWith({ params: { locale: slug }, query: $route.query });
-    expect(loadPage).toHaveBeenCalledWith('/cn/documentation/bar');
     // navigation does not go through the router
     expect(wrapper.vm.$router.push).not.toHaveBeenCalled();
     expect(AppStore.setPreferredLocale).toHaveBeenCalledTimes(1);

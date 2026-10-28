@@ -43,12 +43,9 @@ export default {
     hrefForLocale(slug) {
       return this.$router.resolve({ ...getLocaleParam(slug), query: this.$route.query }).href;
     },
-    loadPage(href) {
-      window.location.assign(href);
-    },
     navigateToLocale({ target: { value: slug } }) {
       AppStore.setPreferredLocale(slug);
-      this.loadPage(this.hrefForLocale(slug));
+      window.location.assign(this.hrefForLocale(slug));
     },
   },
   computed: {
