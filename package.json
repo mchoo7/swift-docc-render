@@ -26,7 +26,8 @@
   "files": [
     "src",
     "index.js",
-    "test-utils.js"
+    "test-utils.js",
+    "vite.js"
   ],
   "dependencies": {
     "@apple/highlightjs-pkl": "^1.0.1",

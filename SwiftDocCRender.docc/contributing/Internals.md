@@ -12,6 +12,23 @@ Each page fetches its required render JSON asynchronously, from the `/data` dire
 
 Even though `swift-docc-render` is a Vue.js application, it defines a variety of components and utilities, that could also be used in a modular fashion by some other Vue application. All components are packaged as raw Vue files, so Vue applications can utilize them as needed.
 
+The package also exports its reusable Vite plugins from `swift-docc-render/vite.js`. A consuming application can use the same aliases, Sass configuration, theme fallback, syntax-highlighting loaders, index template, and distribution license handling as this application:
+
+```js
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
+import swiftDocCRender from 'swift-docc-render/vite.js';
+
+export default defineConfig({
+  plugins: [
+    ...swiftDocCRender(),
+    vue(),
+  ],
+});
+```
+
+By default, imports with the `theme/` prefix first resolve against the consuming application's `src/theme` directory and then fall back to the files packaged by `swift-docc-render`. Pass a `themeRoots` array to `swiftDocCRender` to use different override directories.
+
 ### Vue Page Structure
 
 Routing in DocC-Render is handled by [Vue Router](https://router.vuejs.org), with routes defined in `src/routes.js`. Pages can be dynamic, meaning a single page can match many urls, but still be rendered by the same Vue Page Component. For example the `/tutorials/:id` route is rendered by the **TutorialOverview** page.

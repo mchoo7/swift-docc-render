@@ -11,7 +11,27 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { localDocCArchive, themeFallback } from '../../vite.config';
+import swiftDocCRender, {
+  BASE_URL_PLACEHOLDER,
+  localDocCArchive,
+  themeFallback,
+} from '../../vite';
+
+describe('shared Vite plugins', () => {
+  it('provides the base configuration for consuming applications', () => {
+    const plugins = swiftDocCRender({ buildTarget: 'ide', title: 'Custom Documentation' });
+    const baseConfig = plugins.find(({ name }) => name === 'swift-docc-render-base-config')
+      .config({}, { command: 'build' });
+    const indexPlugin = plugins.find(({ name }) => name === 'swift-docc-render-index-template');
+    indexPlugin.configResolved({ command: 'build' });
+
+    expect(baseConfig.base).toBe(`/${BASE_URL_PLACEHOLDER}/`);
+    expect(baseConfig.resolve.alias['docc-render']).toMatch(/swift-docc-render\/src$/);
+    expect(baseConfig.css.preprocessorOptions.scss.additionalData).toContain("$build-target: 'ide'");
+    expect(indexPlugin.transformIndexHtml.handler('__SWIFT_DOCC_RENDER_TITLE__'))
+      .toBe('Custom Documentation');
+  });
+});
 
 describe('theme fallback', () => {
   let themeRoot;
@@ -22,6 +42,16 @@ describe('theme fallback', () => {
 
   afterEach(() => {
     fs.rmSync(themeRoot, { force: true, recursive: true });
+  });
+
+  it('uses the consuming application theme directory by default', () => {
+    const component = path.join(themeRoot, 'src', 'theme', 'components', 'Custom.vue');
+    fs.mkdirSync(path.dirname(component), { recursive: true });
+    fs.writeFileSync(component, '<template />');
+    const plugin = themeFallback();
+    plugin.configResolved({ root: themeRoot });
+
+    expect(plugin.resolveId('theme/components/Custom.vue')).toBe(component);
   });
 
   it('prefers files from a consuming application theme', () => {
