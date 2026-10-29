@@ -68,6 +68,34 @@ function resolveFile(candidate) {
   ].find(file => fs.existsSync(file));
 }
 
+function themeAliases(root, relativePath = '') {
+  const directory = path.join(root, relativePath);
+  if (!fs.existsSync(directory)) return [];
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const entryPath = path.posix.join(relativePath, entry.name);
+    if (entry.isDirectory()) return themeAliases(root, entryPath);
+    if (!entry.isFile()) return [];
+    const aliases = [{
+      find: `theme/${entryPath}`,
+      replacement: path.join(root, entryPath),
+    }];
+    const extension = path.extname(entry.name);
+    if (extension) {
+      aliases.push({
+        find: `theme/${entryPath.slice(0, -extension.length)}`,
+        replacement: path.join(root, entryPath),
+      });
+    }
+    if (entry.name === 'index.js') {
+      aliases.push({
+        find: `theme/${relativePath}`,
+        replacement: path.join(root, entryPath),
+      });
+    }
+    return aliases;
+  });
+}
+
 function hasAlias(aliases, id) {
   if (Array.isArray(aliases)) {
     return aliases.some(({ find }) => (
@@ -79,6 +107,9 @@ function hasAlias(aliases, id) {
 
 export function themeFallback({ themeRoots } = {}) {
   let roots;
+  const setRoots = root => {
+    roots = [...(themeRoots ?? [path.join(root, 'src/theme')]), sourceRoot];
+  };
   const resolveThemeFile = (id) => {
     if (!id.startsWith('theme/')) return null;
     const relativePath = id.slice('theme/'.length);
@@ -90,31 +121,35 @@ export function themeFallback({ themeRoots } = {}) {
   return {
     name: 'swift-docc-render-theme-fallback',
     enforce: 'pre',
-    config: () => ({
-      resolve: {
-        alias: [{
-          // Keep Sass URLs absolute while resolving them through the consumer-first fallback.
-          find: /^theme\/(.*)$/,
-          replacement: 'theme/$1',
-          customResolver: resolveThemeFile,
-        }],
-      },
-      css: {
-        preprocessorOptions: {
-          scss: {
-            importers: [{
-              findFileUrl(url) {
-                const file = resolveThemeFile(url);
-                return file ? pathToFileURL(file) : null;
-              },
-            }],
+    config: (userConfig = {}) => {
+      setRoots(path.resolve(userConfig.root ?? process.cwd()));
+      return {
+        resolve: {
+          alias: [
+            ...roots.slice(0, -1).flatMap(root => themeAliases(root)),
+            {
+              find: /^theme\/(.*)$/,
+              replacement: `${sourceRoot}/$1`,
+            },
+          ],
+        },
+        css: {
+          preprocessorOptions: {
+            scss: {
+              importers: [{
+                findFileUrl(url) {
+                  const file = resolveThemeFile(url);
+                  return file ? pathToFileURL(file) : null;
+                },
+              }],
+            },
           },
         },
-      },
-    }),
+      };
+    },
     configResolved(config) {
       // order the theme fallback from custom theme to swift-docc-render/src
-      roots = [...(themeRoots ?? [path.join(config.root, 'src/theme')]), sourceRoot];
+      setRoots(config.root);
     },
     resolveId: resolveThemeFile,
   };

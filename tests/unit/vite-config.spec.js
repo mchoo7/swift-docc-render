@@ -131,10 +131,15 @@ describe('theme fallback', () => {
     fs.writeFileSync(component, '<template />');
     const plugin = themeFallback({ themeRoots: [themeRoot] });
     plugin.configResolved({ root: '/consumer' });
-    const [themeAlias] = plugin.config().resolve.alias;
+    const pluginConfig = plugin.config();
+    const overrideAlias = pluginConfig.resolve.alias
+      .find(({ find }) => find === 'theme/components/Custom.vue');
+    const fallbackAlias = pluginConfig.resolve.alias
+      .find(({ find }) => find instanceof RegExp);
 
     expect(plugin.resolveId('theme/components/Custom.vue')).toBe(component);
-    expect(themeAlias.customResolver('theme/components/Custom.vue')).toBe(component);
+    expect(overrideAlias.replacement).toBe(component);
+    expect(fallbackAlias.find.test('theme/components/Icons/CloseIcon.vue')).toBe(true);
   });
 
   it('falls back to swift-docc-render source files', () => {
