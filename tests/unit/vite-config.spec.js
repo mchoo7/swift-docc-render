@@ -35,6 +35,7 @@ describe('shared Vite plugins', () => {
 
     expect(baseConfig.base).toBe(`/${BASE_URL_PLACEHOLDER}/`);
     expect(baseConfig.resolve.alias['docc-render']).toBe(sourceRoot);
+    expect(baseConfig.resolve.dedupe).toEqual(['vue', 'vue-router', 'vue-i18n']);
     expect(baseConfig.optimizeDeps).toEqual({
       exclude: ['swift-docc-render', 'docc-render'],
       include: [
@@ -83,6 +84,7 @@ describe('shared Vite plugins', () => {
         alias: {
           'docc-render': '/custom/docc-render',
         },
+        dedupe: ['vue'],
       },
     };
     const basePlugin = swiftDocCRender({ scssAdditionalData: '$custom: true;' })
@@ -98,6 +100,7 @@ describe('shared Vite plugins', () => {
       .toBe(JSON.stringify('Consumer Documentation'));
     expect(config.experimental.renderBuiltUrl).toBe(renderBuiltUrl);
     expect(config.resolve.alias['docc-render']).toBe('/custom/docc-render');
+    expect(config.resolve.dedupe).toEqual(['vue', 'vue-router', 'vue-i18n']);
   });
 });
 

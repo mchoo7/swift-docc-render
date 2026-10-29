@@ -292,6 +292,8 @@ function baseConfiguration({
         'swift-docc-render > highlight.js/lib/core',
         'swift-docc-render > @apple/highlightjs-pkl',
       ].filter(dependency => !userConfig.optimizeDeps?.include?.includes(dependency));
+      const dedupe = ['vue', 'vue-router', 'vue-i18n']
+        .filter(dependency => !userConfig.resolve?.dedupe?.includes(dependency));
       return {
         base: userConfig.base ?? (isBuild ? `/${BASE_URL_PLACEHOLDER}/` : '/'),
         experimental: {
@@ -302,11 +304,12 @@ function baseConfiguration({
             return undefined;
           }),
         },
-        ...(!hasAlias(userConfig.resolve?.alias, 'docc-render') && { resolve: {
-          alias: {
+        resolve: {
+          ...(!hasAlias(userConfig.resolve?.alias, 'docc-render') && { alias: {
             'docc-render': sourceRoot,
-          },
-        } }),
+          } }),
+          dedupe,
+        },
         optimizeDeps: {
           exclude: optimizeDepsExclude,
           include: optimizeDepsInclude,
