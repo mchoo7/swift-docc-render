@@ -277,6 +277,13 @@ function baseConfiguration({
       const isBuild = command === 'build';
       const userScss = userConfig.css?.preprocessorOptions?.scss;
       const userOutput = userConfig.build?.rolldownOptions?.output;
+      const optimizeDepsExclude = ['swift-docc-render', 'docc-render']
+        .filter(dependency => !userConfig.optimizeDeps?.exclude?.includes(dependency));
+      const optimizeDepsInclude = [
+        'swift-docc-render > css.escape',
+        'swift-docc-render > highlight.js/lib/core',
+        'swift-docc-render > @apple/highlightjs-pkl',
+      ].filter(dependency => !userConfig.optimizeDeps?.include?.includes(dependency));
       return {
         base: userConfig.base ?? (isBuild ? `/${BASE_URL_PLACEHOLDER}/` : '/'),
         experimental: {
@@ -292,6 +299,10 @@ function baseConfiguration({
             'docc-render': sourceRoot,
           },
         } }),
+        optimizeDeps: {
+          exclude: optimizeDepsExclude,
+          include: optimizeDepsInclude,
+        },
         define: {
           'process.env.VUE_APP_DEFAULT_LOCALE': userConfig.define?.[
             'process.env.VUE_APP_DEFAULT_LOCALE'

@@ -35,6 +35,14 @@ describe('shared Vite plugins', () => {
 
     expect(baseConfig.base).toBe(`/${BASE_URL_PLACEHOLDER}/`);
     expect(baseConfig.resolve.alias['docc-render']).toBe(sourceRoot);
+    expect(baseConfig.optimizeDeps).toEqual({
+      exclude: ['swift-docc-render', 'docc-render'],
+      include: [
+        'swift-docc-render > css.escape',
+        'swift-docc-render > highlight.js/lib/core',
+        'swift-docc-render > @apple/highlightjs-pkl',
+      ],
+    });
     expect(baseConfig.define).toEqual({
       'process.env.VUE_APP_DEFAULT_LOCALE': JSON.stringify('en-US'),
       'process.env.VUE_APP_PERFORMANCE_ENABLED': JSON.stringify('true'),
