@@ -254,7 +254,13 @@ export function distributionLicenseHeaders() {
   };
 }
 
-function baseConfiguration({ buildTarget }) {
+function baseConfiguration({
+  buildTarget,
+  defaultLocale,
+  performanceEnabled,
+  target,
+  title,
+}) {
   return {
     name: 'swift-docc-render-base-config',
     config(_config, { command }) {
@@ -273,6 +279,12 @@ function baseConfiguration({ buildTarget }) {
           alias: {
             'docc-render': sourceRoot,
           },
+        },
+        define: {
+          'process.env.VUE_APP_DEFAULT_LOCALE': JSON.stringify(defaultLocale),
+          'process.env.VUE_APP_PERFORMANCE_ENABLED': JSON.stringify(performanceEnabled),
+          'process.env.VUE_APP_TARGET': JSON.stringify(target),
+          'process.env.VUE_APP_TITLE': JSON.stringify(title),
         },
         css: {
           preprocessorOptions: {
@@ -309,12 +321,21 @@ function baseConfiguration({ buildTarget }) {
 
 export default function swiftDocCRender({
   additionalHighlightLanguages = '',
-  buildTarget = 'default',
+  target = '',
+  buildTarget = ['ide', 'default'].includes(target) ? target : 'default',
+  defaultLocale = '',
+  performanceEnabled = '',
   themeRoots,
   title = 'Documentation',
 } = {}) {
   return [
-    baseConfiguration({ buildTarget }),
+    baseConfiguration({
+      buildTarget,
+      defaultLocale,
+      performanceEnabled,
+      target,
+      title,
+    }),
     themeFallback({ themeRoots }),
     highlightLanguageLoaders(additionalHighlightLanguages),
     distributionLicenseHeaders(),

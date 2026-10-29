@@ -21,7 +21,12 @@ const sourceRoot = path.resolve(import.meta.dirname, '../../src');
 
 describe('shared Vite plugins', () => {
   it('provides the base configuration for consuming applications', () => {
-    const plugins = swiftDocCRender({ buildTarget: 'ide', title: 'Custom Documentation' });
+    const plugins = swiftDocCRender({
+      defaultLocale: 'en-US',
+      performanceEnabled: 'true',
+      target: 'ide',
+      title: 'Custom Documentation',
+    });
     const baseConfig = plugins.find(({ name }) => name === 'swift-docc-render-base-config')
       .config({}, { command: 'build' });
     const indexPlugin = plugins.find(({ name }) => name === 'swift-docc-render-index-template');
@@ -29,6 +34,12 @@ describe('shared Vite plugins', () => {
 
     expect(baseConfig.base).toBe(`/${BASE_URL_PLACEHOLDER}/`);
     expect(baseConfig.resolve.alias['docc-render']).toBe(sourceRoot);
+    expect(baseConfig.define).toEqual({
+      'process.env.VUE_APP_DEFAULT_LOCALE': JSON.stringify('en-US'),
+      'process.env.VUE_APP_PERFORMANCE_ENABLED': JSON.stringify('true'),
+      'process.env.VUE_APP_TARGET': JSON.stringify('ide'),
+      'process.env.VUE_APP_TITLE': JSON.stringify('Custom Documentation'),
+    });
     expect(baseConfig.css.preprocessorOptions.scss.additionalData).toContain("$build-target: 'ide'");
     expect(indexPlugin.transformIndexHtml.handler('__SWIFT_DOCC_RENDER_TITLE__'))
       .toBe('Custom Documentation');

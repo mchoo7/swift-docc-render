@@ -40,7 +40,6 @@ export default defineConfig(({ command, mode }) => {
   const target = env.VITE_APP_TARGET ?? '';
   const archiveProxy = env.VITE_DEV_SERVER_PROXY || 'http://localhost:8000';
   const archiveIsLocal = fs.existsSync(archiveProxy);
-  const buildTarget = ['ide', 'default'].includes(target) ? target : 'default';
 
   if (!isBuild && archiveIsLocal) validateLocalDocCArchive(archiveProxy);
 
@@ -48,7 +47,9 @@ export default defineConfig(({ command, mode }) => {
     plugins: [
       ...swiftDocCRender({
         additionalHighlightLanguages: env.VITE_APP_HLJS_LANGUAGES || '',
-        buildTarget,
+        defaultLocale: env.VITE_APP_DEFAULT_LOCALE || '',
+        performanceEnabled: env.VITE_APP_PERFORMANCE_ENABLED || '',
+        target,
         title,
       }),
       vue({
@@ -68,14 +69,6 @@ export default defineConfig(({ command, mode }) => {
     },
     define: {
       'process.env.NODE_ENV': JSON.stringify(isBuild ? 'production' : 'development'),
-      'process.env.VUE_APP_DEFAULT_LOCALE': JSON.stringify(
-        env.VITE_APP_DEFAULT_LOCALE || '',
-      ),
-      'process.env.VUE_APP_PERFORMANCE_ENABLED': JSON.stringify(
-        env.VITE_APP_PERFORMANCE_ENABLED || '',
-      ),
-      'process.env.VUE_APP_TARGET': JSON.stringify(target),
-      'process.env.VUE_APP_TITLE': JSON.stringify(title),
     },
     server: archiveIsLocal ? {} : {
       proxy: {
