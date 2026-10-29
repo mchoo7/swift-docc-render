@@ -68,6 +68,15 @@ function resolveFile(candidate) {
   ].find(file => fs.existsSync(file));
 }
 
+function hasAlias(aliases, id) {
+  if (Array.isArray(aliases)) {
+    return aliases.some(({ find }) => (
+      find instanceof RegExp ? find.test(id) : find === id
+    ));
+  }
+  return Object.hasOwn(aliases ?? {}, id);
+}
+
 export function themeFallback({ themeRoots } = {}) {
   let roots;
   const resolveThemeFile = (id) => {
@@ -258,61 +267,75 @@ function baseConfiguration({
   buildTarget,
   defaultLocale,
   performanceEnabled,
+  scssAdditionalData,
   target,
   title,
 }) {
   return {
     name: 'swift-docc-render-base-config',
-    config(_config, { command }) {
+    config(userConfig, { command }) {
       const isBuild = command === 'build';
+      const userScss = userConfig.css?.preprocessorOptions?.scss;
+      const userOutput = userConfig.build?.rolldownOptions?.output;
       return {
-        base: isBuild ? `/${BASE_URL_PLACEHOLDER}/` : '/',
+        base: userConfig.base ?? (isBuild ? `/${BASE_URL_PLACEHOLDER}/` : '/'),
         experimental: {
-          renderBuiltUrl(filename, { hostType }) {
+          renderBuiltUrl: userConfig.experimental?.renderBuiltUrl ?? ((filename, { hostType }) => {
             if (hostType === 'js') {
               return { runtime: `new URL(${JSON.stringify(filename)}, document.baseURI).href` };
             }
             return undefined;
-          },
+          }),
         },
-        resolve: {
+        ...(!hasAlias(userConfig.resolve?.alias, 'docc-render') && { resolve: {
           alias: {
             'docc-render': sourceRoot,
           },
-        },
+        } }),
         define: {
-          'process.env.VUE_APP_DEFAULT_LOCALE': JSON.stringify(defaultLocale),
-          'process.env.VUE_APP_PERFORMANCE_ENABLED': JSON.stringify(performanceEnabled),
-          'process.env.VUE_APP_TARGET': JSON.stringify(target),
-          'process.env.VUE_APP_TITLE': JSON.stringify(title),
+          'process.env.VUE_APP_DEFAULT_LOCALE': userConfig.define?.[
+            'process.env.VUE_APP_DEFAULT_LOCALE'
+          ] ?? JSON.stringify(defaultLocale),
+          'process.env.VUE_APP_PERFORMANCE_ENABLED': userConfig.define?.[
+            'process.env.VUE_APP_PERFORMANCE_ENABLED'
+          ] ?? JSON.stringify(performanceEnabled),
+          'process.env.VUE_APP_TARGET': userConfig.define?.[
+            'process.env.VUE_APP_TARGET'
+          ] ?? JSON.stringify(target),
+          'process.env.VUE_APP_TITLE': userConfig.define?.[
+            'process.env.VUE_APP_TITLE'
+          ] ?? JSON.stringify(title),
         },
         css: {
           preprocessorOptions: {
             scss: {
-              additionalData: `$build-target: '${buildTarget}'; $is-target-ide: $build-target == 'ide';`,
-              silenceDeprecations: [
+              additionalData: [
+                `$build-target: '${buildTarget}'; $is-target-ide: $build-target == 'ide';`,
+                scssAdditionalData,
+              ].filter(Boolean).join(' '),
+              ...(!userScss?.silenceDeprecations && { silenceDeprecations: [
                 'color-functions',
                 'global-builtin',
                 'if-function',
                 'import',
                 'slash-div',
-              ],
+              ] }),
             },
           },
         },
         build: {
-          sourcemap: false,
-          rolldownOptions: {
+          sourcemap: userConfig.build?.sourcemap ?? false,
+          ...(!Array.isArray(userOutput) && { rolldownOptions: {
             output: {
-              assetFileNames: ({ names = [] }) => (
+              assetFileNames: userOutput?.assetFileNames ?? (({ names = [] }) => (
                 names.some(name => name.endsWith('.css'))
                   ? 'css/[name].[hash][extname]'
                   : 'assets/[name].[hash][extname]'
-              ),
-              chunkFileNames: 'js/[name].[hash].js',
-              entryFileNames: 'js/[name].[hash].js',
+              )),
+              chunkFileNames: userOutput?.chunkFileNames ?? 'js/[name].[hash].js',
+              entryFileNames: userOutput?.entryFileNames ?? 'js/[name].[hash].js',
             },
-          },
+          } }),
         },
       };
     },
@@ -325,6 +348,7 @@ export default function swiftDocCRender({
   buildTarget = ['ide', 'default'].includes(target) ? target : 'default',
   defaultLocale = '',
   performanceEnabled = '',
+  scssAdditionalData = '',
   themeRoots,
   title = 'Documentation',
 } = {}) {
@@ -333,6 +357,7 @@ export default function swiftDocCRender({
       buildTarget,
       defaultLocale,
       performanceEnabled,
+      scssAdditionalData,
       target,
       title,
     }),

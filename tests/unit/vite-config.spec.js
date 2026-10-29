@@ -11,6 +11,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { mergeConfig } from 'vite';
 import swiftDocCRender, {
   BASE_URL_PLACEHOLDER,
   localDocCArchive,
@@ -43,6 +44,52 @@ describe('shared Vite plugins', () => {
     expect(baseConfig.css.preprocessorOptions.scss.additionalData).toContain("$build-target: 'ide'");
     expect(indexPlugin.transformIndexHtml.handler('__SWIFT_DOCC_RENDER_TITLE__'))
       .toBe('Custom Documentation');
+  });
+
+  it('preserves consuming application configuration', () => {
+    const renderBuiltUrl = vi.fn();
+    const userConfig = {
+      base: '/custom/',
+      build: {
+        rolldownOptions: {
+          output: {
+            assetFileNames: 'custom-assets/[name][extname]',
+            chunkFileNames: 'custom-chunks/[name].js',
+            entryFileNames: 'custom-entry/[name].js',
+          },
+        },
+        sourcemap: true,
+      },
+      css: {
+        preprocessorOptions: {
+          scss: {
+            silenceDeprecations: ['mixed-decls'],
+          },
+        },
+      },
+      define: {
+        'process.env.VUE_APP_TITLE': JSON.stringify('Consumer Documentation'),
+      },
+      experimental: { renderBuiltUrl },
+      resolve: {
+        alias: {
+          'docc-render': '/custom/docc-render',
+        },
+      },
+    };
+    const basePlugin = swiftDocCRender({ scssAdditionalData: '$custom: true;' })
+      .find(({ name }) => name === 'swift-docc-render-base-config');
+    const config = mergeConfig(userConfig, basePlugin.config(userConfig, { command: 'build' }));
+
+    expect(config.base).toBe('/custom/');
+    expect(config.build.sourcemap).toBe(true);
+    expect(config.build.rolldownOptions.output).toEqual(userConfig.build.rolldownOptions.output);
+    expect(config.css.preprocessorOptions.scss.additionalData).toContain('$custom: true;');
+    expect(config.css.preprocessorOptions.scss.silenceDeprecations).toEqual(['mixed-decls']);
+    expect(config.define['process.env.VUE_APP_TITLE'])
+      .toBe(JSON.stringify('Consumer Documentation'));
+    expect(config.experimental.renderBuiltUrl).toBe(renderBuiltUrl);
+    expect(config.resolve.alias['docc-render']).toBe('/custom/docc-render');
   });
 });
 
