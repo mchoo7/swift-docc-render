@@ -17,6 +17,8 @@ import swiftDocCRender, {
   themeFallback,
 } from '../../vite';
 
+const sourceRoot = path.resolve(import.meta.dirname, '../../src');
+
 describe('shared Vite plugins', () => {
   it('provides the base configuration for consuming applications', () => {
     const plugins = swiftDocCRender({ buildTarget: 'ide', title: 'Custom Documentation' });
@@ -26,7 +28,7 @@ describe('shared Vite plugins', () => {
     indexPlugin.configResolved({ command: 'build' });
 
     expect(baseConfig.base).toBe(`/${BASE_URL_PLACEHOLDER}/`);
-    expect(baseConfig.resolve.alias['docc-render']).toMatch(/swift-docc-render\/src$/);
+    expect(baseConfig.resolve.alias['docc-render']).toBe(sourceRoot);
     expect(baseConfig.css.preprocessorOptions.scss.additionalData).toContain("$build-target: 'ide'");
     expect(indexPlugin.transformIndexHtml.handler('__SWIFT_DOCC_RENDER_TITLE__'))
       .toBe('Custom Documentation');
