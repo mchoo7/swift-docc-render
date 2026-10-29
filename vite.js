@@ -91,6 +91,14 @@ export function themeFallback({ themeRoots } = {}) {
     name: 'swift-docc-render-theme-fallback',
     enforce: 'pre',
     config: () => ({
+      resolve: {
+        alias: [{
+          // Keep Sass URLs absolute while resolving them through the consumer-first fallback.
+          find: /^theme\/(.*)$/,
+          replacement: 'theme/$1',
+          customResolver: resolveThemeFile,
+        }],
+      },
       css: {
         preprocessorOptions: {
           scss: {
