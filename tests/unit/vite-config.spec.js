@@ -71,7 +71,7 @@ describe('theme fallback', () => {
     plugin.configResolved({ root: '/consumer' });
 
     expect(plugin.resolveId('theme/components/Icons/CloseIcon.vue'))
-      .toMatch(/swift-docc-render\/src\/components\/Icons\/CloseIcon\.vue$/);
+      .toBe(path.join(sourceRoot, 'components/Icons/CloseIcon.vue'));
   });
 });
 
